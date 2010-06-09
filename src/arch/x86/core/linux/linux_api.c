@@ -29,37 +29,37 @@ FILE_LICENCE(GPL2_OR_LATER);
 #include <asm/unistd.h>
 #include <string.h>
 
-int linux_access(const char *pathname, int mode)
+__asmcall int linux_access(const char *pathname, int mode)
 {
 	return linux_syscall(__NR_access, pathname, mode);
 }
 
-int linux_open(const char *pathname, int flags)
+__asmcall int linux_open(const char *pathname, int flags)
 {
 	return linux_syscall(__NR_open, pathname, flags);
 }
 
-int linux_close(int fd)
+__asmcall int linux_close(int fd)
 {
 	return linux_syscall(__NR_close, fd);
 }
 
-ssize_t linux_read(int fd, void *buf, size_t count)
+__asmcall ssize_t linux_read(int fd, void *buf, size_t count)
 {
 	return linux_syscall(__NR_read, fd, buf, count);
 }
 
-ssize_t linux_write(int fd, const void *buf, size_t count)
+__asmcall ssize_t linux_write(int fd, const void *buf, size_t count)
 {
 	return linux_syscall(__NR_write, fd, buf, count);
 }
 
-off_t linux_lseek(int fd, off_t offset, int whence)
+__asmcall off_t linux_lseek(int fd, off_t offset, int whence)
 {
 	return linux_syscall(__NR_lseek, fd, offset, whence);
 }
 
-int linux_fcntl(int fd, int cmd, ...)
+__asmcall int linux_fcntl(int fd, int cmd, ...)
 {
 	long arg;
 	va_list list;
@@ -71,7 +71,7 @@ int linux_fcntl(int fd, int cmd, ...)
 	return linux_syscall(__NR_fcntl, fd, cmd, arg);
 }
 
-int linux_ioctl(int fd, int request, ...)
+__asmcall int linux_ioctl(int fd, int request, ...)
 {
 	void *arg;
 	va_list list;
@@ -83,17 +83,17 @@ int linux_ioctl(int fd, int request, ...)
 	return linux_syscall(__NR_ioctl, fd, request, arg);
 }
 
-int linux_poll(struct pollfd *fds, nfds_t nfds, int timeout)
+__asmcall int linux_poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
 	return linux_syscall(__NR_poll, fds, nfds, timeout);
 }
 
-int linux_nanosleep(const struct timespec *req, struct timespec *rem)
+__asmcall int linux_nanosleep(const struct timespec *req, struct timespec *rem)
 {
 	return linux_syscall(__NR_nanosleep, req, rem);
 }
 
-int linux_usleep(useconds_t usec)
+__asmcall int linux_usleep(useconds_t usec)
 {
 	struct timespec ts = {
 		.tv_sec = (long) (usec / 1000000),
@@ -103,32 +103,32 @@ int linux_usleep(useconds_t usec)
 	return linux_nanosleep(&ts, NULL);
 }
 
-int linux_gettimeofday(struct timeval *tv, struct timezone *tz)
+__asmcall int linux_gettimeofday(struct timeval *tv, struct timezone *tz)
 {
 	return linux_syscall(__NR_gettimeofday, tv, tz);
 }
 
-void *linux_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
+__asmcall void *linux_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
 {
 	return (void *)linux_syscall(__SYSCALL_mmap, addr, length, prot, flags, fd, offset);
 }
 
-void *linux_mremap(void *old_address, size_t old_size, size_t new_size, int flags)
+__asmcall void *linux_mremap(void *old_address, size_t old_size, size_t new_size, int flags)
 {
 	return (void *)linux_syscall(__NR_mremap, old_address, old_size, new_size, flags);
 }
 
-int linux_munmap(void *addr, size_t length)
+__asmcall int linux_munmap(void *addr, size_t length)
 {
 	return linux_syscall(__NR_munmap, addr, length);
 }
 
-int linux_iopl(int level)
+__asmcall int linux_iopl(int level)
 {
 	return linux_syscall(__NR_iopl, level);
 }
 
-uid_t linux_getuid(void)
+__asmcall uid_t linux_getuid(void)
 {
 	return linux_syscall(__NR_getuid);
 }

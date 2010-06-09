@@ -16,8 +16,10 @@ FILE_LICENCE ( GPL2_OR_LATER );
 /* Raw image data for all embedded images */
 #undef EMBED
 #define EMBED( _index, _path, _name )					\
-	extern char embedded_image_ ## _index ## _data[];		\
-	extern char embedded_image_ ## _index ## _len[];		\
+	extern char embedded_image_ ## _index ## _data[]		\
+		asm ( _S2 ( embedded_image_ ## _index ## _data ) );	\
+	extern char embedded_image_ ## _index ## _len[]			\
+		asm ( _S2 ( embedded_image_ ## _index ## _len ) );	\
 	__asm__ ( ".section \".rodata\", \"a\", @progbits\n\t"		\
 		  "\nembedded_image_" #_index "_data:\n\t"		\
 		  ".incbin \"" _path "\"\n\t"				\

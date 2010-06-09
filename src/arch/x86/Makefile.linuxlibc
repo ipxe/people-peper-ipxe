@@ -1,0 +1,22 @@
+MEDIA = linuxlibc
+
+CFLAGS += -fleading-underscore
+
+INCDIRS += arch/x86/include/linux
+
+STDLIBS_BEGIN := crt1.o crti.o crtbeginT.o
+STDLIBS_GROUP := libc.a libgcc.a libgcc_eh.a
+STDLIBS_END := crtend.o crtn.o
+
+# Get absolute paths to stdlibs
+STDLIBS_GETPATH = $(foreach f, $(1), $(shell $(CC) $(CFLAGS) --print-file-name $(f)))
+STDLIBS_BEGIN := $(call STDLIBS_GETPATH,$(STDLIBS_BEGIN))
+STDLIBS_GROUP := $(call STDLIBS_GETPATH,$(STDLIBS_GROUP))
+STDLIBS_END := $(call STDLIBS_GETPATH,$(STDLIBS_END))
+
+TGT_LD_FLAGS_PRE += -static $(STDLIBS_BEGIN)
+TGT_LD_FLAGS_POST += --start-group $(STDLIBS_GROUP) --end-group $(STDLIBS_END)
+
+$(BIN)/%.linuxlibc : $(BIN)/%.linuxlibc.tmp
+	$(QM)$(ECHO) "  [FINISH] $@"
+	$(Q)cp -p $< $@

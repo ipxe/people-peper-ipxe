@@ -64,7 +64,7 @@
 	.comm	_sym, 0
 #else /* ASSEMBLY */
 #define PROVIDE_SYMBOL( _sym )				\
-	char _sym[0]
+	char _sym[0] asm ( _S2 ( _sym ) )
 #endif /* ASSEMBLY */
 
 /** Require a symbol within this object file
@@ -80,7 +80,7 @@
 	.previous
 #else /* ASSEMBLY */
 #define REQUIRE_SYMBOL( _sym )				\
-	extern char _sym;				\
+	extern char _sym asm ( _S2 ( _sym ) ) ;		\
 	static char * _C2 ( _C2 ( __require_, _sym ), _C2 ( _, __LINE__ ) ) \
 		__attribute__ (( section ( ".discard" ), used )) \
 		= &_sym

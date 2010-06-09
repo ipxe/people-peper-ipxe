@@ -155,7 +155,7 @@ static const char *errors[] = {
 	"Wrong medium type",
 };
 
-const char *linux_strerror(int errnum)
+__asmcall const char *linux_strerror(int errnum)
 {
 	static char errbuf[64];
 	static int errors_size = sizeof(errors) / sizeof(*errors);
