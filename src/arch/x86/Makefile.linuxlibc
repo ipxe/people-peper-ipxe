@@ -1,0 +1,29 @@
+MEDIA = linuxlibc
+
+INCDIRS += arch/x86/include/linux
+
+# stdlib objects that need to be passed before any other objects
+STDLIBS_BEGIN = $(BIN)/remapped_crt1.o $(BIN)/remapped_crti.o $(BIN)/remapped_crtbeginT.o
+# stdlib archives
+STDLIBS_LIBS = $(BIN)/remapped_libc.a $(BIN)/remapped_libgcc.a $(BIN)/remapped_libgcc_eh.a
+STDLIBS_LIBS_L = $(foreach lib, $(STDLIBS_LIBS), -l:$(lib))
+# stdlib objects that need to be passed at the end
+STDLIBS_END = $(BIN)/remapped_crtend.o $(BIN)/remapped_crtn.o
+
+SYMBOLS_REMAP = arch/x86/scripts/linuxlibc_symbols_remap
+
+# Redefine colliding stdlib symbols
+$(BIN)/remapped_% : $(SYMBOLS_REMAP)
+	$(QM)$(ECHO) "  [REMAP] $*"
+	$(Q)objcopy --redefine-syms=$(SYMBOLS_REMAP) $(shell gcc $(CFLAGS) --print-file-name $*) $@
+
+.PRECIOUS : $(BIN)/remapped_%
+
+TGT_EXTRA_DEPS += $(STDLIBS_BEGIN) $(STDLIBS_LIBS) $(STDLIBS_END)
+TGT_LD_FLAGS_PRE += -static $(STDLIBS_BEGIN)
+# use a group because the libs dep on each other
+TGT_LD_FLAGS_POST += --start-group $(STDLIBS_LIBS_L) --end-group $(STDLIBS_END)
+
+$(BIN)/%.linuxlibc : $(BIN)/%.linuxlibc.tmp
+	$(QM)$(ECHO) "  [FINISH] $@"
+	$(Q)cp -p $< $@
