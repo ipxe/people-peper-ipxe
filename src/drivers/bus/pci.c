@@ -263,7 +263,8 @@ static int pcibus_probe ( struct root_device *rootdev ) {
 			}
 
 			/* Check for physical device presence */
-			pci_read_config_dword ( pci, PCI_VENDOR_ID, &tmp );
+			if ( pci_read_config_dword ( pci, PCI_VENDOR_ID, &tmp ) )
+				continue;
 			if ( ( tmp == 0xffffffff ) || ( tmp == 0 ) )
 				continue;
 			
