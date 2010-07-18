@@ -54,6 +54,11 @@ ssize_t linux_write(int fd, const void *buf, size_t count)
 	return linux_syscall(__NR_write, fd, buf, count);
 }
 
+off_t linux_lseek(int fd, off_t offset, int whence)
+{
+	return linux_syscall(__NR_lseek, fd, offset, whence);
+}
+
 int linux_fcntl(int fd, int cmd, ...)
 {
 	long arg;

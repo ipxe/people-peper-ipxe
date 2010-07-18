@@ -14,6 +14,8 @@
 #define NAP_LINUX
 #define SMBIOS_LINUX
 
+#define PCIAPI_LINUX
+
 #define IMAGE_SCRIPT
 
 #endif /* CONFIG_DEFAULTS_LINUX_H */
