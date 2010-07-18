@@ -267,4 +267,5 @@ REQUIRE_OBJECT ( embedded );
 /* linux drivers aren't picked up by the parserom utility so drag them in here */
 #ifdef DRIVERS_LINUX
 REQUIRE_OBJECT ( tap );
+REQUIRE_OBJECT ( lpci );
 #endif

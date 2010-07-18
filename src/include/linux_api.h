@@ -47,6 +47,7 @@ typedef uint32_t useconds_t;
 
 extern long linux_syscall(int number, ...);
 
+extern int linux_access(const char *pathname, int mode);
 extern int linux_open(const char *pathname, int flags);
 extern int linux_close(int fd);
 extern ssize_t linux_read(int fd, void *buf, size_t count);
@@ -66,6 +67,11 @@ extern int linux_gettimeofday(struct timeval *tv, struct timezone *tz);
 extern void *linux_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
 extern void *linux_mremap(void *old_address, size_t old_size, size_t new_size, int flags);
 extern int linux_munmap(void *addr, size_t length);
+
+extern int linux_iopl(int level);
+
+typedef __kernel_uid_t uid_t;
+extern uid_t linux_getuid(void);
 
 extern const char *linux_strerror(int errnum);
 

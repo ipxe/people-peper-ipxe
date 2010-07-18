@@ -29,6 +29,11 @@ FILE_LICENCE(GPL2_OR_LATER);
 #include <asm/unistd.h>
 #include <string.h>
 
+int linux_access(const char *pathname, int mode)
+{
+	return linux_syscall(__NR_access, pathname, mode);
+}
+
 int linux_open(const char *pathname, int flags)
 {
 	return linux_syscall(__NR_open, pathname, flags);
@@ -111,4 +116,14 @@ void *linux_mremap(void *old_address, size_t old_size, size_t new_size, int flag
 int linux_munmap(void *addr, size_t length)
 {
 	return linux_syscall(__NR_munmap, addr, length);
+}
+
+int linux_iopl(int level)
+{
+	return linux_syscall(__NR_iopl, level);
+}
+
+uid_t linux_getuid(void)
+{
+	return linux_syscall(__NR_getuid);
 }
