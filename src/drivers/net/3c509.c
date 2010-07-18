@@ -424,7 +424,7 @@ static struct root_driver t509_root_driver = {
 };
 
 /** 3c509 bus root device */
-struct root_device t509_root_device __root_device = {
+struct root_device t509_root_device __root_device ( ROOT_NORMAL ) = {
 	.dev = { .name = "3c509" },
 	.driver = &t509_root_driver,
 };

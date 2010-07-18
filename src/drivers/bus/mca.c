@@ -171,7 +171,7 @@ static struct root_driver mca_root_driver = {
 };
 
 /** MCA bus root device */
-struct root_device mca_root_device __root_device = {
+struct root_device mca_root_device __root_device ( ROOT_NORMAL ) = {
 	.dev = { .name = "MCA" },
 	.driver = &mca_root_driver,
 };
