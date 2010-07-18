@@ -42,6 +42,7 @@ typedef int pid_t;
 #include <linux/fcntl.h>
 #include <linux/ioctl.h>
 #include <linux/poll.h>
+#include <linux/fs.h>
 
 typedef uint32_t useconds_t;
 
@@ -52,6 +53,7 @@ extern int linux_open(const char *pathname, int flags);
 extern int linux_close(int fd);
 extern ssize_t linux_read(int fd, void *buf, size_t count);
 extern ssize_t linux_write(int fd, const void *buf, size_t count);
+extern off_t linux_lseek(int fd, off_t offset, int whence);
 extern int linux_fcntl(int fd, int cmd, ...);
 extern int linux_ioctl(int fd, int request, ...);
 
