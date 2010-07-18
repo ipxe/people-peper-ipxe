@@ -42,8 +42,11 @@ extern void mdumpfree ( void );
  */
 static inline void * __malloc malloc_dma ( size_t size, size_t phys_align ) {
 	void * ptr = alloc_memblock ( size, phys_align );
-	if ( ptr && size )
+	if ( ptr && size ) {
 		VALGRIND_MALLOCLIKE_BLOCK ( ptr, size, 0, 0 );
+		/* DMA memory can be modified by hardware w/o valgrind noticing */
+		VALGRIND_MAKE_MEM_DEFINED ( ptr, size );
+	}
 	return ptr;
 }
 
