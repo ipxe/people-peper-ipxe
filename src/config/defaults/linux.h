@@ -15,6 +15,7 @@
 #define SMBIOS_LINUX
 
 #define PCIAPI_LINUX
+#define IOAPI_LINUX
 
 #define DRIVERS_LINUX
 
