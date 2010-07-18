@@ -14,6 +14,8 @@ FILE_LICENCE ( GPL2_OR_LATER );
  */
 
 extern unsigned long strtoul ( const char *p, char **endp, int base );
+extern unsigned long long strtoull ( const char *p, char **endp, int base );
+
 
 /*****************************************************************************
  *
