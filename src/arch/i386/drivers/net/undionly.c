@@ -106,7 +106,7 @@ static struct root_driver undi_root_driver = {
 };
 
 /** UNDI bus root device */
-struct root_device undi_root_device __root_device = {
+struct root_device undi_root_device __root_device ( ROOT_NORMAL ) = {
 	.dev = { .name = "UNDI" },
 	.driver = &undi_root_driver,
 };

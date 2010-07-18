@@ -107,7 +107,11 @@ struct root_driver {
 /** Root device table */
 #define ROOT_DEVICES __table ( struct root_device, "root_devices" )
 
+#define ROOT_EARLY	01	/**< Early probe */
+#define ROOT_NORMAL	02	/**< Normal probe */
+#define ROOT_LATE	03	/**< Late probe */
+
 /** Declare a root device */
-#define __root_device __table_entry ( ROOT_DEVICES, 01 )
+#define __root_device( root_order ) __table_entry ( ROOT_DEVICES, root_order )
 
 #endif /* _IPXE_DEVICE_H */

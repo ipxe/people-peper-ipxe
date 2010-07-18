@@ -335,7 +335,7 @@ static struct root_driver pci_root_driver = {
 };
 
 /** PCI bus root device */
-struct root_device pci_root_device __root_device = {
+struct root_device pci_root_device __root_device ( ROOT_NORMAL ) = {
 	.dev = { .name = "PCI" },
 	.driver = &pci_root_driver,
 };

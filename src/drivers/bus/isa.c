@@ -166,7 +166,7 @@ static struct root_driver isa_root_driver = {
 };
 
 /** ISA bus root device */
-struct root_device isa_root_device __root_device = {
+struct root_device isa_root_device __root_device ( ROOT_NORMAL ) = {
 	.dev = { .name = "ISA" },
 	.driver = &isa_root_driver,
 };

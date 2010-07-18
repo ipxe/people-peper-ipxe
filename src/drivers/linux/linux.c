@@ -109,7 +109,7 @@ static struct root_driver linux_root_driver = {
 };
 
 /** Linux root device */
-struct root_device linux_root_device __root_device = {
+struct root_device linux_root_device __root_device ( ROOT_EARLY ) = {
 	.dev = { .name = "linux" },
 	.driver = &linux_root_driver,
 };

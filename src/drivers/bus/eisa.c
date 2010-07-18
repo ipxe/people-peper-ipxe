@@ -176,7 +176,7 @@ static struct root_driver eisa_root_driver = {
 };
 
 /** EISA bus root device */
-struct root_device eisa_root_device __root_device = {
+struct root_device eisa_root_device __root_device ( ROOT_NORMAL ) = {
 	.dev = { .name = "EISA" },
 	.driver = &eisa_root_driver,
 };

@@ -106,7 +106,7 @@ static struct root_driver snp_root_driver = {
 };
 
 /** SNP bus root device */
-struct root_device snp_root_device __root_device = {
+struct root_device snp_root_device __root_device ( ROOT_NORMAL ) = {
 	.dev = { .name = "EFI SNP" },
 	.driver = &snp_root_driver,
 };
