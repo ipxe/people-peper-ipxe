@@ -17,6 +17,8 @@
 #define PCIAPI_LINUX
 #define IOAPI_LINUX
 
+#define DRIVERS_LINUX
+
 #define IMAGE_SCRIPT
 
 #endif /* CONFIG_DEFAULTS_LINUX_H */
