@@ -71,8 +71,12 @@ struct autosized_block {
  */
 #define NOWHERE ( ( void * ) ~( ( intptr_t ) 0 ) )
 
-/** List of free memory blocks */
-static LIST_HEAD ( free_blocks );
+static struct memory_pool base_pool = {
+	.free_blocks = LIST_HEAD_INIT ( base_pool.free_blocks ),
+};
+
+static struct memory_pool * normal_pool = &base_pool;
+static struct memory_pool * dma_pool = &base_pool;
 
 /** Total amount of free memory */
 size_t freemem;
@@ -88,27 +92,35 @@ size_t freemem;
 static char heap[HEAP_SIZE] __attribute__ (( aligned ( __alignof__(void *) )));
 
 
-static inline void valgrind_make_blocks_defined ( void )
+static inline void valgrind_make_blocks_defined ( struct memory_pool *pool )
 {
 	struct memory_block *block;
 
 	if (RUNNING_ON_VALGRIND > 0) {
-		VALGRIND_MAKE_MEM_DEFINED ( &free_blocks, sizeof ( free_blocks ) );
-		list_for_each_entry ( block, &free_blocks, list )
+		VALGRIND_MAKE_MEM_DEFINED ( &pool->free_blocks, sizeof ( pool->free_blocks ) );
+		list_for_each_entry ( block, &pool->free_blocks, list )
 			VALGRIND_MAKE_MEM_DEFINED ( block, sizeof ( *block ) );
 	}
 }
 
-static inline void valgrind_make_blocks_noaccess ( void )
+static inline void valgrind_make_blocks_noaccess ( struct memory_pool *pool )
 {
 	struct memory_block *block, *tmp;
 
 	if ( RUNNING_ON_VALGRIND > 0 ) {
-		list_for_each_entry_safe ( block, tmp, &free_blocks, list )
+		list_for_each_entry_safe ( block, tmp, &pool->free_blocks, list )
 			VALGRIND_MAKE_MEM_NOACCESS ( block, sizeof ( *block ) );
-		VALGRIND_MAKE_MEM_NOACCESS ( &free_blocks, sizeof ( free_blocks ) );
+		VALGRIND_MAKE_MEM_NOACCESS ( &pool->free_blocks, sizeof ( pool->free_blocks ) );
 	}
 }
+
+struct memory_pool * set_dma_pool(struct memory_pool *new_pool)
+{
+	struct memory_pool * old_pool = dma_pool;
+	dma_pool = new_pool;
+	return old_pool;
+}
+
 
 /**
  * Discard some cached data
@@ -128,6 +140,7 @@ static unsigned int discard_cache ( void ) {
 /**
  * Allocate a memory block
  *
+ * @v pool		Memory pool to allocate from
  * @v size		Requested size
  * @v align		Physical alignment
  * @ret ptr		Memory block, or NULL
@@ -137,7 +150,7 @@ static unsigned int discard_cache ( void ) {
  *
  * @c align must be a power of two.  @c size may not be zero.
  */
-void * alloc_memblock ( size_t size, size_t align ) {
+void * alloc_memblock ( struct memory_pool *pool, size_t size, size_t align ) {
 	struct memory_block *block;
 	size_t align_mask;
 	size_t pre_size;
@@ -146,7 +159,7 @@ void * alloc_memblock ( size_t size, size_t align ) {
 	struct memory_block *post;
 	struct memory_block *ret = NULL;
 
-	valgrind_make_blocks_defined ( );
+	valgrind_make_blocks_defined ( pool );
 
 	/* Round up size to multiple of MIN_MEMBLOCK_SIZE and
 	 * calculate alignment mask.
@@ -157,7 +170,7 @@ void * alloc_memblock ( size_t size, size_t align ) {
 	DBG ( "Allocating %#zx (aligned %#zx)\n", size, align );
 	while ( 1 ) {
 		/* Search through blocks for the first one with enough space */
-		list_for_each_entry ( block, &free_blocks, list ) {
+		list_for_each_entry ( block, &pool->free_blocks, list ) {
 			pre_size = ( - virt_to_phys ( block ) ) & align_mask;
 			post_size = block->size - pre_size - size;
 			if ( post_size >= 0 ) {
@@ -216,19 +229,21 @@ void * alloc_memblock ( size_t size, size_t align ) {
 	}
 
 cleanup:
-	valgrind_make_blocks_noaccess ( );
+	valgrind_make_blocks_noaccess ( pool );
+
 	return ret;
 }
 
 /**
  * Free a memory block
  *
+ * @v pool		Memory pool the block was allocated from
  * @v ptr		Memory allocated by alloc_memblock(), or NULL
  * @v size		Size of the memory
  *
  * If @c ptr is NULL, no action is taken.
  */
-void free_memblock ( void *ptr, size_t size ) {
+void free_memblock ( struct memory_pool *pool, void *ptr, size_t size ) {
 	struct memory_block *freeing;
 	struct memory_block *block;
 	ssize_t gap_before;
@@ -238,7 +253,7 @@ void free_memblock ( void *ptr, size_t size ) {
 	if ( ! ptr )
 		return;
 
-	valgrind_make_blocks_defined ( );
+	valgrind_make_blocks_defined ( pool );
 
 	/* Round up size to match actual size that alloc_memblock()
 	 * would have used.
@@ -250,7 +265,7 @@ void free_memblock ( void *ptr, size_t size ) {
 	DBG ( "Freeing [%p,%p)\n", freeing, ( ( ( void * ) freeing ) + size ));
 
 	/* Insert/merge into free list */
-	list_for_each_entry ( block, &free_blocks, list ) {
+	list_for_each_entry ( block, &pool->free_blocks, list ) {
 		/* Calculate gaps before and after the "freeing" block */
 		gap_before = ( ( ( void * ) freeing ) - 
 			       ( ( ( void * ) block ) + block->size ) );
@@ -289,7 +304,7 @@ void free_memblock ( void *ptr, size_t size ) {
 	/* Update free memory counter */
 	freemem += size;
 
-	valgrind_make_blocks_noaccess ( );
+	valgrind_make_blocks_noaccess ( pool );
 }
 
 /**
@@ -326,7 +341,7 @@ void * realloc ( void *old_ptr, size_t new_size ) {
 	if ( new_size ) {
 		new_total_size = ( new_size +
 				   offsetof ( struct autosized_block, data ) );
-		new_block = alloc_memblock ( new_total_size, 1 );
+		new_block = alloc_memblock ( normal_pool, new_total_size, 1 );
 		if ( ! new_block )
 			return NULL;
 		VALGRIND_MAKE_MEM_UNDEFINED ( new_block, offsetof ( struct autosized_block, data ) );
@@ -350,7 +365,7 @@ void * realloc ( void *old_ptr, size_t new_size ) {
 			     offsetof ( struct autosized_block, data ) );
 		memcpy ( new_ptr, old_ptr,
 			 ( ( old_size < new_size ) ? old_size : new_size ) );
-		free_memblock ( old_block, old_total_size );
+		free_memblock ( normal_pool, old_block, old_total_size );
 		VALGRIND_MAKE_MEM_NOACCESS ( old_block, offsetof ( struct autosized_block, data ) );
 		VALGRIND_FREELIKE_BLOCK ( old_ptr, 0 );
 	}
@@ -405,6 +420,21 @@ void * zalloc ( size_t size ) {
 	return data;
 }
 
+void free_dma ( void *ptr, size_t size ) {
+	free_memblock ( dma_pool, ptr, size );
+	VALGRIND_FREELIKE_BLOCK ( ptr, 0 );
+}
+
+void * __malloc malloc_dma ( size_t size, size_t phys_align ) {
+	void * ptr = alloc_memblock ( dma_pool, size, phys_align );
+	if ( ptr && size ) {
+		VALGRIND_MALLOCLIKE_BLOCK ( ptr, size, 0, 0 );
+		/* DMA memory can be modified by hardware w/o valgrind noticing */
+		VALGRIND_MAKE_MEM_DEFINED ( ptr, size );
+	}
+	return ptr;
+}
+
 /**
  * Add memory to allocation pool
  *
@@ -416,11 +446,11 @@ void * zalloc ( size_t size ) {
  *
  * @c start must be aligned to at least a multiple of sizeof(void*).
  */
-void mpopulate ( void *start, size_t len ) {
+void mpopulate ( struct memory_pool *pool, void *start, size_t len ) {
 	/* Prevent free_memblock() from rounding up len beyond the end
 	 * of what we were actually given...
 	 */
-	free_memblock ( start, ( len & ~( MIN_MEMBLOCK_SIZE - 1 ) ) );
+	free_memblock ( pool, start, ( len & ~( MIN_MEMBLOCK_SIZE - 1 ) ) );
 }
 
 /**
@@ -429,7 +459,7 @@ void mpopulate ( void *start, size_t len ) {
  */
 static void init_heap ( void ) {
 	VALGRIND_MAKE_MEM_NOACCESS ( heap, sizeof ( heap ) );
-	mpopulate ( heap, sizeof ( heap ) );
+	mpopulate ( normal_pool, heap, sizeof ( heap ) );
 }
 
 /** Memory allocator initialisation function */
@@ -443,11 +473,11 @@ struct init_fn heap_init_fn __init_fn ( INIT_EARLY ) = {
  * Dump free block list
  *
  */
-void mdumpfree ( void ) {
+void mdumpfree ( struct memory_pool *pool ) {
 	struct memory_block *block;
 
 	printf ( "Free block list:\n" );
-	list_for_each_entry ( block, &free_blocks, list ) {
+	list_for_each_entry ( block, &pool->free_blocks, list ) {
 		printf ( "[%p,%p] (size %#zx)\n", block,
 			 ( ( ( void * ) block ) + block->size ), block->size );
 	}
