@@ -175,7 +175,12 @@ endif
 #
 BIN_GOALS	:= $(filter bin/% bin-%,$(MAKECMDGOALS))
 BIN_GOAL_BINS	:= $(foreach BG,$(BIN_GOALS),$(firstword $(subst /, ,$(BG))))
-NUM_BINS	:= $(words $(sort $(BIN_GOAL_BINS)))
+BIN_GOAL_UNIQUE_BINS	:= $(sort $(BIN_GOAL_BINS))
+# Take the first goal from each BIN directory
+BIN_GOALS_REPS	:= $(foreach B,$(BIN_GOAL_UNIQUE_BINS),$(firstword $(filter $(B)/%,$(BIN_GOALS))))
+# Rest of the goals
+BIN_GOALS_REST	:= $(filter-out $(BIN_GOALS_REPS),$(BIN_GOALS))
+NUM_BINS	:= $(words $(BIN_GOAL_UNIQUE_BINS))
 
 ifeq ($(NUM_BINS),0)
 
@@ -203,9 +208,19 @@ else # NUM_BINS == 1
 # depends on $(BIN); such targets should be made conditional upon the
 # existence of $(BIN).
 #
-$(BIN_GOALS) : % : BIN_RECURSE
-	$(Q)$(MAKE) --no-print-directory BIN=$(firstword $(subst /, ,$@)) $@
-.PHONY : BIN_RECURSE
+
+# The recipe for each of the reps actually builds all goals from each BIN directory
+$(BIN_GOALS_REPS) :
+	$(Q)$(MAKE) --no-print-directory BIN=$(firstword $(subst /, ,$@)) \
+	    $(filter $(firstword $(subst /, ,$@))/%, $(BIN_GOALS))
+# Run always
+.PHONY : $(BIN_GOALS_REPS)
+
+# Do nothing for the rest of the goals as they are covered by the recipe above
+$(BIN_GOALS_REST) :
+	$(Q)true
+# Run always to avoid "nothing to be done" messages
+.PHONY : $(BIN_GOALS_REST)
 
 endif # NUM_BINS == 1
 endif # NUM_BINS == 0
