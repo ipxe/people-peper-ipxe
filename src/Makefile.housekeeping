@@ -896,6 +896,14 @@ $(BIN)/etherboot.% : $(BIN)/ipxe.%
 
 endif # defined(BIN)
 
+# Build multiple image types on each supported arch/platform combination
+everything:
+	$(Q)$(MAKE) --no-print-directory \
+		bin-i386-pcbios/ipxe.dsk bin-i386-pcbios/ipxe.iso bin-i386-pcbios/ipxe.usb \
+		bin-i386-pcbios/undionly.kpxe  bin-i386-pcbios/rtl8139.rom \
+		bin-i386-efi/ipxe.efi bin-i386-efi/ipxe.efidrv bin-i386-efi/ipxe.efirom \
+		bin-x86_64-efi/ipxe.efi bin-x86_64-efi/ipxe.efidrv bin-x86_64-efi/ipxe.efirom
+
 ###############################################################################
 #
 # The compression utilities
