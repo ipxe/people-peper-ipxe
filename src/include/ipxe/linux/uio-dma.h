@@ -39,9 +39,6 @@
 #define UIO_DMA_H
 
 #include <stdint.h>
-#include <sys/types.h>
-#include <sys/user.h>
-#include <sys/uio.h>
 
 #ifdef __cplusplus
 extern "C" {
