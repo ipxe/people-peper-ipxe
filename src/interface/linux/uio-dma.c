@@ -30,25 +30,11 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#define _GNU_SOURCE
-
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <syslog.h>
-#include <signal.h>
-#include <errno.h>
-
-#include <sys/ioctl.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/mman.h>
-#include <sys/user.h>
-
-#include "uio-dma-ioctl.h"
-#include "uio-dma.h"
+#include <asm/errno.h>
+#include <linux_api.h>
+#include <ipxe/linux/uio-dma-ioctl.h>
+#include <ipxe/linux/uio-dma.h>
+#include <ipxe/malloc.h>
 
 static inline int is_po2(unsigned long n)
 {
@@ -69,12 +55,12 @@ static inline unsigned long roundup_po2(unsigned long n)
 
 int uio_dma_open()
 {
-	return open("/dev/uio-dma", O_RDWR);
+	return linux_open("/dev/uio-dma", O_RDWR);
 }
 
 void uio_dma_close(int fd)
 {
-	close(fd);
+	linux_close(fd);
 }
 
 struct uio_dma_area *uio_dma_alloc(int fd, unsigned int size,
@@ -103,7 +89,7 @@ struct uio_dma_area *uio_dma_alloc(int fd, unsigned int size,
 	for (chunk_size = roundup_po2(size); chunk_size; chunk_size >>= 1) {
 		areq.chunk_size  = chunk_size;
 		areq.chunk_count = (size + chunk_size - 1) / chunk_size;
-		err = ioctl(fd, UIO_DMA_ALLOC, (unsigned long) &areq);
+		err = linux_ioctl(fd, UIO_DMA_ALLOC, (unsigned long) &areq);
 		if (!err)
 			break;
 	}
@@ -113,7 +99,7 @@ struct uio_dma_area *uio_dma_alloc(int fd, unsigned int size,
 	}
 
 	if (!is_po2(areq.chunk_size)) {
-		errno = -EILSEQ;
+		linux_errno = -EILSEQ;
 		goto failed;
 	}
 
@@ -121,7 +107,7 @@ struct uio_dma_area *uio_dma_alloc(int fd, unsigned int size,
 	da->chunk_count = areq.chunk_count;
 	da->chunk_size  = areq.chunk_size;
 	da->mmap_offset = areq.mmap_offset;
-	da->addr = mmap(NULL, da->size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, da->mmap_offset);
+	da->addr = linux_mmap(NULL, da->size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, da->mmap_offset);
         if (da->addr == MAP_FAILED)
 		goto failed;
 
@@ -129,23 +115,22 @@ struct uio_dma_area *uio_dma_alloc(int fd, unsigned int size,
 
 failed:
 	/* We need to free the area we just requested from the kernel. */
-	err = errno;
+	err = linux_errno;
 	freq.mmap_offset = da->mmap_offset;
-	ioctl(fd, UIO_DMA_FREE, (unsigned long) &freq);
+	linux_ioctl(fd, UIO_DMA_FREE, (unsigned long) &freq);
 	free(da);
-	errno = err;
+	linux_errno = err;
 	return NULL;
 }
 
 int uio_dma_free(int fd, struct uio_dma_area *da)
 {
 	struct uio_dma_free_req freq;
-	int err;
 
-	munmap(da->addr, da->size);
+	linux_munmap(da->addr, da->size);
 
 	freq.mmap_offset = da->mmap_offset;
-	if (ioctl(fd, UIO_DMA_FREE, (unsigned long) &freq) < 0)
+	if (linux_ioctl(fd, UIO_DMA_FREE, (unsigned long) &freq) < 0)
 		return -1;
 	free(da);
 	return 0;
@@ -160,7 +145,8 @@ struct uio_dma_mapping *uio_dma_map(int fd, struct uio_dma_area *area,
 		uint64_t dmaddr[area->chunk_count];
 	} mreq;
 
-	int err, i;
+	int err;
+	unsigned i;
 
 	m = malloc(sizeof(*m) + sizeof(uint64_t) * area->chunk_count);
 	if (!m)
@@ -174,7 +160,7 @@ struct uio_dma_mapping *uio_dma_map(int fd, struct uio_dma_area *area,
 	for (i=0; i < area->chunk_count; i++)
 		mreq.dmaddr[i] = 0;
 
-	err = ioctl(fd, UIO_DMA_MAP, (unsigned long) &mreq);
+	err = linux_ioctl(fd, UIO_DMA_MAP, (unsigned long) &mreq);
 	if (err)
 		goto failed;
 
@@ -191,9 +177,9 @@ struct uio_dma_mapping *uio_dma_map(int fd, struct uio_dma_area *area,
 	return m;
 
 failed:
-	err = errno;
+	err = linux_errno;
 	free(m);
-	errno = err;
+	linux_errno = err;
 	return NULL;
 }
 
@@ -205,7 +191,7 @@ int uio_dma_unmap(int fd, struct uio_dma_mapping *m)
 	ureq.devid = m->devid;
 	ureq.direction = m->direction;
 	ureq.flags = 0;
-	if (ioctl(fd, UIO_DMA_UNMAP, (unsigned long) &ureq) < 0)
+	if (linux_ioctl(fd, UIO_DMA_UNMAP, (unsigned long) &ureq) < 0)
 		return -1;
 	free(m);
 	return 0;
