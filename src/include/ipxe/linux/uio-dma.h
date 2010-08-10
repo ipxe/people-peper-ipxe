@@ -160,6 +160,29 @@ static inline uint64_t uio_dma_addr(struct uio_dma_mapping *m, uint8_t *addr, un
 	return m->dmaddr[chunk] + offset;
 }
 
+/**
+ * Map DMA address back to the user-space region.
+ *
+ * @param m pointer to @see uio_dma_mapping
+ * @param dma_addr the dma_addr
+ * @param len length of the memory region
+ * @return maddr or NULL if address could not be mapped
+ */
+static inline uint8_t *uio_maddr(struct uio_dma_mapping *m, uint64_t dma_addr, unsigned int len)
+{
+	unsigned long chunk, chunk_size;
+
+	chunk_size = (1 << m->chunk_shift);
+	if (len > chunk_size)
+		return NULL;
+
+	for (chunk = 0 ; chunk < m->chunk_count ; ++chunk)
+		if (dma_addr + len - m->dmaddr[chunk] <= chunk_size)
+			return m->addr + chunk * chunk_size + dma_addr - m->dmaddr[chunk];
+
+	return NULL;
+}
+
 #ifdef __cplusplus
 }
 #endif
